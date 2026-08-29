@@ -1,4 +1,4 @@
-import { db } from './db.ts'
+import { db, requestPersistentStorage } from './db.ts'
 import type { SettingKey, SettingsMap } from './types.ts'
 
 /**
@@ -34,4 +34,18 @@ export async function removeSetting(key: SettingKey): Promise<void> {
 export async function getAllSettings(): Promise<Partial<SettingsMap>> {
   const rows = await db.settings.toArray()
   return Object.fromEntries(rows.map((row) => [row.key, row.value])) as Partial<SettingsMap>
+}
+
+/**
+ * Ask for persistent storage and remember the answer, so the app can tell the
+ * owner whether this device promised to keep their meals.
+ */
+export async function ensurePersistentStorage(): Promise<boolean> {
+  const granted = await requestPersistentStorage()
+  try {
+    await setSetting('hasPersistedStorage', granted)
+  } catch {
+    // The flag is a convenience; failing to record it changes nothing.
+  }
+  return granted
 }
