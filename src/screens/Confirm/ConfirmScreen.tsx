@@ -5,6 +5,7 @@ import {
   toDateKey,
   type Confidence,
   type DateKey,
+  type MealSource,
 } from '../../db/index.ts'
 import type { EstimatedItem, MealEstimate } from '../../services/llm/index.ts'
 import { MACRO_LABELS, type MacroKey } from '../Today/summary.ts'
@@ -125,14 +126,17 @@ function ItemNumberField({
 export default function ConfirmScreen({
   estimate,
   description,
+  source = 'text',
   date = toDateKey(),
   onSaved,
   onBack,
   onDiscard,
 }: {
   estimate: MealEstimate
-  /** What was typed on the Add screen; seeds the meal name. */
+  /** What was typed on the Add screen; seeds the meal name. Empty for a photo. */
   description: string
+  /** Which Add-screen path produced this estimate. Stored with the meal. */
+  source?: MealSource
   date?: DateKey
   onSaved: () => void
   onBack: () => void
@@ -174,7 +178,7 @@ export default function ConfirmScreen({
         date,
         loggedAt: Date.now(),
         name: mealName,
-        source: 'text',
+        source,
         confidence: estimate.confidence,
         notes: estimate.notes,
         items: kept,
@@ -200,7 +204,7 @@ export default function ConfirmScreen({
       </button>
 
       <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
-        AI estimate
+        {source === 'photo' ? 'Photo estimate' : 'AI estimate'}
       </p>
       <div className="mt-1.5 flex flex-wrap items-center gap-3">
         <h1 className="text-4xl font-bold tracking-tight text-mist-100">Confirm</h1>

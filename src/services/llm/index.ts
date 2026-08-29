@@ -3,7 +3,7 @@ import { AnthropicProvider } from './anthropic.ts'
 import { LLMError, type LLMProvider } from './types.ts'
 
 export * from './types.ts'
-export { parseMealEstimate, stripFences } from './parseEstimate.ts'
+export { parseMealEstimate, stripFences, type ParseOptions } from './parseEstimate.ts'
 export { AnthropicProvider } from './anthropic.ts'
 
 /**
@@ -18,5 +18,14 @@ export function getTextProvider(provider: ProviderId): LLMProvider {
   throw new LLMError(
     'unsupported',
     'Text estimates use Anthropic right now. Switch provider in Settings.',
+  )
+}
+
+/** The provider that looks at photos. Same story as text: Anthropic only. */
+export function getImageProvider(provider: ProviderId): LLMProvider {
+  if (provider === 'anthropic') return AnthropicProvider
+  throw new LLMError(
+    'unsupported',
+    'Photo estimates use Anthropic right now. Switch provider in Settings.',
   )
 }

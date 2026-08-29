@@ -2,6 +2,7 @@
 // normalised into. Screens only ever see these types — never a raw HTTP
 // response, and never anything provider-specific.
 import type { Confidence, FoodItem } from '../../db/index.ts'
+import type { CompressedImage } from '../imageCompress.ts'
 import type { ProviderId } from '../keyVault.ts'
 
 /** One food the model identified. Same shape a stored food item takes. */
@@ -52,4 +53,10 @@ export interface LLMProvider {
    * Rejects with an {@link LLMError} for every expected failure.
    */
   estimateFromText(description: string, signal?: AbortSignal): Promise<MealEstimate>
+  /**
+   * Turn a photo of a meal into a structured estimate. The image arrives
+   * already compressed — providers send it as it is and never see the original
+   * file. Rejects with an {@link LLMError} for every expected failure.
+   */
+  estimateFromImage(image: CompressedImage, signal?: AbortSignal): Promise<MealEstimate>
 }
