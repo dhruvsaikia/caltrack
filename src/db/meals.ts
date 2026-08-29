@@ -12,9 +12,10 @@ function round(value: number, decimals = 0): number {
 /**
  * Coerce one food's numbers into something storable. LLM output and hand
  * typing both produce junk (negatives, NaN, 12 decimal places); this is the
- * single choke point that keeps such values out of IndexedDB.
+ * single choke point that keeps such values out of IndexedDB. Exported so the
+ * AI parser clamps model output by exactly these rules before it is shown.
  */
-function sanitizeNumbers<T extends Omit<FoodItem, 'id' | 'mealId'>>(item: T): T {
+export function sanitizeFoodItem<T extends Omit<FoodItem, 'id' | 'mealId'>>(item: T): T {
   const clamp = (n: number, decimals: number) =>
     Number.isFinite(n) ? round(Math.max(n, 0), decimals) : 0
   return {
@@ -55,7 +56,7 @@ export async function addMeal(draft: MealDraft): Promise<number> {
   return db.transaction('rw', db.meals, db.foodItems, async () => {
     const mealId = await db.meals.add({ ...meal, name: meal.name.trim() })
     if (items.length > 0) {
-      await db.foodItems.bulkAdd(items.map((item) => ({ ...sanitizeNumbers(item), mealId })))
+      await db.foodItems.bulkAdd(items.map((item) => ({ ...sanitizeFoodItem(item), mealId })))
     }
     return mealId
   })
@@ -111,7 +112,7 @@ export async function updateMeal(
     if (items) {
       await db.foodItems.where('mealId').equals(id).delete()
       if (items.length > 0) {
-        await db.foodItems.bulkAdd(items.map((item) => ({ ...sanitizeNumbers(item), mealId: id })))
+        await db.foodItems.bulkAdd(items.map((item) => ({ ...sanitizeFoodItem(item), mealId: id })))
       }
     }
   })

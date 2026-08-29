@@ -11,7 +11,14 @@ import {
  * draft state while it is being typed — once saved, the screen shows the
  * masked form and nothing else reads the value back out.
  */
-export default function ApiKeyCard({ provider }: { provider: ProviderInfo }) {
+export default function ApiKeyCard({
+  provider,
+  onKeyChange,
+}: {
+  provider: ProviderInfo
+  /** Called after this provider gains or loses a key, so Settings can react. */
+  onKeyChange?: () => void
+}) {
   const [masked, setMasked] = useState(() => maskedApiKey(provider.id))
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState(false)
@@ -46,6 +53,7 @@ export default function ApiKeyCard({ provider }: { provider: ProviderInfo }) {
     setDraft('')
     setError(null)
     setEditing(false)
+    onKeyChange?.()
   }
 
   function handleRemove() {
@@ -56,6 +64,7 @@ export default function ApiKeyCard({ provider }: { provider: ProviderInfo }) {
     removeApiKey(provider.id)
     setMasked(null)
     setConfirmingRemove(false)
+    onKeyChange?.()
   }
 
   const showInput = editing || masked === null
