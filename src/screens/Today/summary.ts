@@ -36,6 +36,8 @@ export interface MacroBar {
   fraction: number
   /** True when the fill is measured against a goal rather than the day's mix. */
   hasGoal: boolean
+  /** The gram goal being aimed at. Undefined when the target sets none. */
+  goal?: number
 }
 
 export const MACRO_LABELS: Record<MacroKey, string> = {
@@ -62,7 +64,14 @@ export function macroBars(totals: Totals, target?: Target): MacroBar[] {
       : totalGrams > 0
         ? grams / totalGrams
         : 0
-    return { key, label: MACRO_LABELS[key], grams: Math.round(grams * 10) / 10, fraction, hasGoal }
+    return {
+      key,
+      label: MACRO_LABELS[key],
+      grams: Math.round(grams * 10) / 10,
+      fraction,
+      hasGoal,
+      goal: hasGoal ? Math.round(goal) : undefined,
+    }
   })
 }
 

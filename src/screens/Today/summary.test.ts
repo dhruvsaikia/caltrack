@@ -46,6 +46,14 @@ describe('macroBars', () => {
     expect(macroBars(totals({ fat_g: 90 }), target)[2].fraction).toBe(1)
   })
 
+  it('carries the gram goal only for macros that have one', () => {
+    const target = { id: 1, effectiveFrom: '2026-08-29', dailyCalories: 2000, protein_g: 150 } as Target
+    const [protein, carbs] = macroBars(totals({ protein_g: 75, carbs_g: 100 }), target)
+    // The chip renders `75 / 150g` for protein and a bare `100g` for carbs.
+    expect(protein.goal).toBe(150)
+    expect(carbs.goal).toBeUndefined()
+  })
+
   it('shows empty bars for a day with nothing logged', () => {
     expect(macroBars(totals()).map((bar) => bar.fraction)).toEqual([0, 0, 0])
   })
