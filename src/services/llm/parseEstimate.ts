@@ -73,12 +73,21 @@ function toConfidence(value: unknown): Confidence {
 }
 
 const BAD_OUTPUT = "The AI's answer didn't make sense. Try rewording it."
+const NO_FOOD = "The AI didn't find any food in that. Try adding detail."
+
+export interface ParseOptions {
+  /**
+   * What to say when the reply parsed but held no food. "Try adding detail"
+   * is advice for a typed description; a photo needs its own wording.
+   */
+  noFoodMessage?: string
+}
 
 /**
  * Parse a model reply into a {@link MealEstimate}.
  * Throws {@link LLMError} of kind `bad-output` when nothing usable is left.
  */
-export function parseMealEstimate(raw: string): MealEstimate {
+export function parseMealEstimate(raw: string, options: ParseOptions = {}): MealEstimate {
   let parsed: unknown
   try {
     parsed = JSON.parse(stripFences(raw))
@@ -91,7 +100,7 @@ export function parseMealEstimate(raw: string): MealEstimate {
   const rawItems = Array.isArray(parsed.items) ? parsed.items : []
   const items = rawItems.map(toItem).filter((item): item is EstimatedItem => item !== null)
   if (items.length === 0) {
-    throw new LLMError('bad-output', "The AI didn't find any food in that. Try adding detail.")
+    throw new LLMError('bad-output', options.noFoodMessage ?? NO_FOOD)
   }
 
   const notes = toText(parsed.notes)

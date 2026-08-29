@@ -142,3 +142,35 @@ describe('parseMealEstimate', () => {
     }
   })
 })
+
+describe('parseMealEstimate no-food wording', () => {
+  it('uses the default advice when no override is given', () => {
+    try {
+      parseMealEstimate(reply({ items: [] }))
+      expect.unreachable('should have thrown')
+    } catch (error) {
+      expect((error as LLMError).message).toBe(
+        "The AI didn't find any food in that. Try adding detail.",
+      )
+    }
+  })
+
+  it('uses the wording the caller supplied', () => {
+    try {
+      parseMealEstimate(reply({ items: [] }), { noFoodMessage: 'Try a closer shot.' })
+      expect.unreachable('should have thrown')
+    } catch (error) {
+      expect((error as LLMError).kind).toBe('bad-output')
+      expect((error as LLMError).message).toBe('Try a closer shot.')
+    }
+  })
+
+  it('does not change the wording for a reply that is not JSON', () => {
+    try {
+      parseMealEstimate('not json', { noFoodMessage: 'Try a closer shot.' })
+      expect.unreachable('should have thrown')
+    } catch (error) {
+      expect((error as LLMError).message).not.toBe('Try a closer shot.')
+    }
+  })
+})

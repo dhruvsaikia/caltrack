@@ -5,7 +5,8 @@ import MealForm from './screens/AddMeal/MealForm.tsx'
 import ConfirmScreen from './screens/Confirm/ConfirmScreen.tsx'
 import SettingsScreen from './screens/Settings/SettingsScreen.tsx'
 import TabBar, { type Tab } from './components/TabBar.tsx'
-import type { MealWithItems } from './db/index.ts'
+import type { MealSource, MealWithItems } from './db/index.ts'
+import type { CompressedImage } from './services/imageCompress.ts'
 import type { MealEstimate } from './services/llm/index.ts'
 
 /**
@@ -17,21 +18,24 @@ type View =
   | { name: 'today' }
   | { name: 'add' }
   | { name: 'meal'; editing?: MealWithItems }
-  | { name: 'confirm'; estimate: MealEstimate }
+  | { name: 'confirm'; estimate: MealEstimate; source: MealSource }
   | { name: 'settings' }
 
 export default function App() {
   const [view, setView] = useState<View>({ name: 'today' })
   // Bumped after a save or delete so Today re-reads the database on return.
   const [reloadKey, setReloadKey] = useState(0)
-  // Lives here so stepping forward to Confirm and back keeps what was typed.
+  // These live here so stepping forward to Confirm and back keeps what was
+  // typed, and the photo that was picked.
   const [description, setDescription] = useState('')
+  const [photo, setPhoto] = useState<CompressedImage | null>(null)
 
   const reload = () => setReloadKey((key) => key + 1)
   const goToday = () => setView({ name: 'today' })
 
   const finishAdding = () => {
     setDescription('')
+    setPhoto(null)
     reload()
     goToday()
   }
@@ -42,7 +46,9 @@ export default function App() {
         <AddMealScreen
           description={description}
           onDescriptionChange={setDescription}
-          onEstimate={(estimate) => setView({ name: 'confirm', estimate })}
+          photo={photo}
+          onPhotoChange={setPhoto}
+          onEstimate={(estimate, source) => setView({ name: 'confirm', estimate, source })}
           onManualEntry={() => setView({ name: 'meal' })}
           onOpenSettings={() => setView({ name: 'settings' })}
           onCancel={goToday}
@@ -56,9 +62,12 @@ export default function App() {
       <div className="mx-auto w-full max-w-[430px]">
         <ConfirmScreen
           estimate={view.estimate}
-          description={description}
+          // A photo estimate has no typed words, so the meal name falls back
+          // to the first food the model named.
+          description={view.source === 'photo' ? '' : description}
+          source={view.source}
           onSaved={finishAdding}
-          // Back keeps the description so the wording can be adjusted and retried.
+          // Back keeps the description and photo so either can be retried.
           onBack={() => setView({ name: 'add' })}
           onDiscard={finishAdding}
         />
