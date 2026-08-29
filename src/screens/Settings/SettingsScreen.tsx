@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import {
   DEFAULT_DAILY_CALORIES,
   ensurePersistentStorage,
@@ -9,7 +9,7 @@ import {
   setTarget,
   type Target,
 } from '../../db/index.ts'
-import { DEFAULT_PROVIDER, PROVIDERS, type ProviderId } from '../../services/keyVault.ts'
+import { DEFAULT_PROVIDER, hasApiKey, PROVIDERS, type ProviderId } from '../../services/keyVault.ts'
 import { MACRO_LABELS, type MacroKey } from '../Today/summary.ts'
 import ApiKeyCard from './ApiKeyCard.tsx'
 
@@ -96,7 +96,18 @@ export default function SettingsScreen({ onGoalChanged }: { onGoalChanged?: () =
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  // Bumped whenever a key is saved or removed below, so the warning under the
+  // provider picker reflects the vault without a reload.
+  const [keyRevision, setKeyRevision] = useState(0)
   const calorieId = useId()
+
+  const missingKey = useMemo(
+    () => !hasApiKey(provider),
+    // keyRevision is the trigger: hasApiKey reads localStorage, not state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [provider, keyRevision],
+  )
+  const providerLabel = PROVIDERS.find((option) => option.id === provider)?.label ?? provider
 
   useEffect(() => {
     let cancelled = false
@@ -228,7 +239,10 @@ export default function SettingsScreen({ onGoalChanged }: { onGoalChanged?: () =
             </button>
           </Section>
 
-          <Section title="AI provider" description="Used for parsing meals once AI logging lands.">
+          <Section
+            title="AI provider"
+            description="Used to turn what you describe into calories and macros."
+          >
             <div
               role="radiogroup"
               aria-label="AI provider"
@@ -252,6 +266,11 @@ export default function SettingsScreen({ onGoalChanged }: { onGoalChanged?: () =
                 )
               })}
             </div>
+            {missingKey && (
+              <p role="status" className="mt-3 text-sm text-warn">
+                No key saved for {providerLabel} — add one below before logging with AI.
+              </p>
+            )}
           </Section>
 
           <Section
@@ -260,7 +279,11 @@ export default function SettingsScreen({ onGoalChanged }: { onGoalChanged?: () =
           >
             <ul className="flex flex-col gap-3">
               {PROVIDERS.map((option) => (
-                <ApiKeyCard key={option.id} provider={option} />
+                <ApiKeyCard
+                  key={option.id}
+                  provider={option}
+                  onKeyChange={() => setKeyRevision((revision) => revision + 1)}
+                />
               ))}
             </ul>
           </Section>
