@@ -43,3 +43,13 @@ export async function requestPersistentStorage(): Promise<boolean> {
     return false
   }
 }
+
+/** Whether the browser has already promised not to evict our data. */
+export async function isPersistentStorage(): Promise<boolean> {
+  if (!navigator.storage?.persisted) return false
+  try {
+    return await navigator.storage.persisted()
+  } catch {
+    return false
+  }
+}
