@@ -15,6 +15,7 @@
 
   --color-accent: #7c6cf6;
   --color-accent-soft: #9b8ffa;
+  --color-warn: #f2a154; /* over the daily goal */
 
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;

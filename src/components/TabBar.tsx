@@ -18,7 +18,7 @@ function BarsIcon({ className }: IconProps) {
   )
 }
 
-export default function TabBar() {
+export default function TabBar({ onAddMeal }: { onAddMeal: () => void }) {
   return (
     <nav
       aria-label="Primary"
@@ -41,6 +41,7 @@ export default function TabBar() {
           <button
             type="button"
             aria-label="Add meal"
+            onClick={onAddMeal}
             className="flex h-14 w-14 items-center justify-center rounded-full border border-accent/60 bg-accent/10 text-accent shadow-[0_0_24px_-6px_var(--color-accent)] transition active:scale-95"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6">
@@ -58,7 +59,9 @@ export default function TabBar() {
         <li className="flex justify-center">
           <button
             type="button"
-            className="flex flex-col items-center gap-1.5 px-4 py-2 text-mist-500"
+            disabled
+            aria-disabled="true"
+            className="flex flex-col items-center gap-1.5 px-4 py-2 text-mist-500 disabled:opacity-60"
           >
             <BarsIcon className="h-6 w-6" />
             <span className="text-xs font-medium">Trends</span>

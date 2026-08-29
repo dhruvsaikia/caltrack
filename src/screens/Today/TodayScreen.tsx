@@ -1,97 +1,101 @@
-// Placeholder Today screen (System 1). Values are static until the data
-// system lands; nothing here reads or writes storage yet.
-const GOAL = 1500
-const EATEN = 0
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  getMealsForDate,
+  getTargetForDate,
+  sumTotals,
+  toDateKey,
+  DEFAULT_DAILY_CALORIES,
+  ZERO_TOTALS,
+  type DateKey,
+  type MealWithItems,
+  type Target,
+} from '../../db/index.ts'
+import CalorieRing from './CalorieRing.tsx'
+import MacroBars from './MacroBars.tsx'
+import MealList from './MealList.tsx'
+import { calorieSummary, formatDayHeading, macroBars } from './summary.ts'
 
-const MACROS = [
-  { label: 'Protein', grams: 0 },
-  { label: 'Carbs', grams: 0 },
-  { label: 'Fat', grams: 0 },
-] as const
+export default function TodayScreen({
+  date = toDateKey(),
+  reloadKey = 0,
+  onAddMeal,
+  onEditMeal,
+}: {
+  /** Day to show. Defaults to today; passed in so tests can pin it. */
+  date?: DateKey
+  /** Bump to re-read the database after a save or delete elsewhere. */
+  reloadKey?: number
+  onAddMeal: () => void
+  onEditMeal: (meal: MealWithItems) => void
+}) {
+  const [meals, setMeals] = useState<MealWithItems[]>([])
+  const [target, setTarget] = useState<Target | undefined>()
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
-function formatToday(date: Date) {
-  return date
-    .toLocaleDateString(undefined, {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-    })
-    .toUpperCase()
-}
+  const load = useCallback(async () => {
+    try {
+      const [rows, dayTarget] = await Promise.all([getMealsForDate(date), getTargetForDate(date)])
+      setMeals(rows)
+      setTarget(dayTarget)
+      setStatus('ready')
+    } catch {
+      setStatus('error')
+    }
+  }, [date])
 
-function CalorieRing({ remaining }: { remaining: number }) {
-  return (
-    <div className="relative flex h-56 w-56 items-center justify-center">
-      <svg viewBox="0 0 200 200" aria-hidden="true" className="absolute inset-0 h-full w-full">
-        <circle
-          cx="100"
-          cy="100"
-          r="92"
-          fill="none"
-          stroke="var(--color-ink-600)"
-          strokeWidth="10"
-        />
-      </svg>
-      <div className="flex flex-col items-center">
-        <span className="text-6xl font-semibold tracking-tight text-mist-100 tabular-nums">
-          {remaining}
-        </span>
-        <span className="mt-1 text-sm text-mist-500">kcal left</span>
-      </div>
-    </div>
+  useEffect(() => {
+    void load()
+  }, [load, reloadKey])
+
+  const totals = useMemo(
+    () => (meals.length > 0 ? sumTotals(meals.flatMap((meal) => meal.items)) : ZERO_TOTALS),
+    [meals],
   )
-}
-
-function MacroCard({ label, grams }: { label: string; grams: number }) {
-  return (
-    <div className="rounded-2xl bg-ink-700/70 px-3.5 py-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-mist-500">
-          {label}
-        </span>
-        <span className="text-sm font-semibold text-mist-100 tabular-nums">{grams}g</span>
-      </div>
-      <div className="mt-2.5 h-1 rounded-full bg-ink-500/70" />
-    </div>
-  )
-}
-
-export default function TodayScreen() {
-  const remaining = Math.max(GOAL - EATEN, 0)
+  const summary = calorieSummary(totals.calories, target?.dailyCalories ?? DEFAULT_DAILY_CALORIES)
+  const bars = useMemo(() => macroBars(totals, target), [totals, target])
 
   return (
     <div className="px-6" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 3.5rem)' }}>
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mist-500">
-          {formatToday(new Date())}
+          {formatDayHeading(new Date())}
         </p>
         <h1 className="mt-1.5 text-4xl font-bold tracking-tight text-mist-100">Today</h1>
       </header>
 
       <section aria-label="Calories remaining" className="mt-10 flex flex-col items-center">
-        <CalorieRing remaining={remaining} />
+        <CalorieRing summary={summary} />
         <p className="mt-6 text-sm text-mist-500">
-          <span className="font-semibold text-mist-100 tabular-nums">{EATEN}</span> eaten
+          <span className="font-semibold tabular-nums text-mist-100">{summary.eaten}</span> eaten
           <span className="mx-3" />
-          <span className="font-semibold text-mist-100 tabular-nums">{GOAL}</span> goal
+          <span className="font-semibold tabular-nums text-mist-100">{summary.goal}</span> goal
         </p>
       </section>
 
-      <section aria-label="Macros" className="mt-6 grid grid-cols-3 gap-3">
-        {MACROS.map((macro) => (
-          <MacroCard key={macro.label} label={macro.label} grams={macro.grams} />
-        ))}
+      <section aria-label="Macros" className="mt-6">
+        <MacroBars bars={bars} />
       </section>
 
-      <section aria-label="Meals" className="mt-14 flex flex-col items-center">
-        <div className="h-14 w-14 rounded-full border border-dashed border-ink-500" />
-        <p className="mt-5 text-base text-mist-300">Nothing logged yet</p>
-        <button
-          type="button"
-          className="mt-5 rounded-xl border border-accent/60 px-6 py-3 text-base font-medium text-accent transition active:scale-[0.98]"
-        >
-          Log your first meal
-        </button>
+      <section aria-label="Meals" className="mt-10">
+        {status === 'error' ? (
+          <p role="alert" className="text-center text-sm text-mist-300">
+            Couldn't read your meals from this device.
+          </p>
+        ) : meals.length === 0 ? (
+          <div className={`flex flex-col items-center ${status === 'loading' ? 'invisible' : ''}`}>
+            <div className="h-14 w-14 rounded-full border border-dashed border-ink-500" />
+            <p className="mt-5 text-base text-mist-300">Nothing logged yet</p>
+            <button
+              type="button"
+              onClick={onAddMeal}
+              className="mt-5 rounded-xl border border-accent/60 px-6 py-3 text-base font-medium text-accent transition active:scale-[0.98]"
+            >
+              Log your first meal
+            </button>
+          </div>
+        ) : (
+          <MealList meals={meals} onSelect={onEditMeal} />
+        )}
       </section>
     </div>
   )
