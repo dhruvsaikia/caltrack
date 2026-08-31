@@ -99,7 +99,12 @@ export default function TabBar({
         </li>
 
         <li className="flex justify-center">
-          <TabButton label="Trends" icon={BarsIcon} disabled />
+          <TabButton
+            label="Trends"
+            icon={BarsIcon}
+            active={active === 'trends'}
+            onClick={() => onNavigate('trends')}
+          />
         </li>
 
         <li className="flex justify-center">
