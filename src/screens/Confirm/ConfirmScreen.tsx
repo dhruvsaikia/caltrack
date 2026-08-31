@@ -204,7 +204,7 @@ export default function ConfirmScreen({
       </button>
 
       <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
-        {source === 'photo' ? 'Photo estimate' : 'AI estimate'}
+        {source === 'photo' ? 'Photo estimate' : source === 'voice' ? 'Voice estimate' : 'AI estimate'}
       </p>
       <div className="mt-1.5 flex flex-wrap items-center gap-3">
         <h1 className="text-4xl font-bold tracking-tight text-mist-100">Confirm</h1>
