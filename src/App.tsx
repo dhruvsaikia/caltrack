@@ -4,6 +4,7 @@ import AddMealScreen from './screens/AddMeal/AddMealScreen.tsx'
 import MealForm from './screens/AddMeal/MealForm.tsx'
 import ConfirmScreen from './screens/Confirm/ConfirmScreen.tsx'
 import SettingsScreen from './screens/Settings/SettingsScreen.tsx'
+import TrendsScreen from './screens/Trends/TrendsScreen.tsx'
 import TabBar, { type Tab } from './components/TabBar.tsx'
 import type { MealSource, MealWithItems } from './db/index.ts'
 import type { CompressedImage } from './services/imageCompress.ts'
@@ -19,6 +20,7 @@ type View =
   | { name: 'add' }
   | { name: 'meal'; editing?: MealWithItems }
   | { name: 'confirm'; estimate: MealEstimate; source: MealSource }
+  | { name: 'trends' }
   | { name: 'settings' }
 
 export default function App() {
@@ -91,6 +93,7 @@ export default function App() {
 
   const goTo = (tab: Tab) => {
     if (tab === 'settings') setView({ name: 'settings' })
+    else if (tab === 'trends') setView({ name: 'trends' })
     else if (tab === 'today') goToday()
   }
 
@@ -100,6 +103,8 @@ export default function App() {
         {view.name === 'settings' ? (
           // A new goal changes the ring, so Today re-reads when it comes back.
           <SettingsScreen onGoalChanged={reload} />
+        ) : view.name === 'trends' ? (
+          <TrendsScreen reloadKey={reloadKey} />
         ) : (
           <TodayScreen
             reloadKey={reloadKey}
@@ -109,7 +114,7 @@ export default function App() {
         )}
       </main>
       <TabBar
-        active={view.name === 'settings' ? 'settings' : 'today'}
+        active={view.name === 'settings' || view.name === 'trends' ? view.name : 'today'}
         onNavigate={goTo}
         onAddMeal={() => setView({ name: 'add' })}
       />
